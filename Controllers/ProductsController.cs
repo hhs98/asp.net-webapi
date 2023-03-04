@@ -19,14 +19,14 @@ namespace ProductApi.Controllers
 
     [HttpGet]
     [Authorize(Roles = "SuperAdmin,Admin")]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+    public async Task<ActionResult<IEnumerable<ProductDTO>>> GetProducts()
     {
       var products = await _context.Products.ToListAsync();
       return Ok(products);
     }
 
     [HttpGet("{id:int}", Name = "GetProduct")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
+    public async Task<ActionResult<ProductDTO>> GetProduct(int id)
     {
       var product = await _context.Products.FindAsync(id);
 
@@ -39,7 +39,7 @@ namespace ProductApi.Controllers
     }
 
     [HttpPost]
-    public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
+    public async Task<ActionResult<ProductDTO>> CreateProduct([FromBody] ProductDTO product)
     {
       if (product == null)
       {
@@ -54,7 +54,7 @@ namespace ProductApi.Controllers
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
-    public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO product)
     {
       if (product == null || id != product.Id)
       {
@@ -97,7 +97,7 @@ namespace ProductApi.Controllers
     [Authorize(Roles = "SuperAdmin,Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdatePartialProduct(int id, JsonPatchDocument<Product> patchDTO)
+    public async Task<IActionResult> UpdatePartialProduct(int id, JsonPatchDocument<ProductDTO> patchDTO)
     {
       if (patchDTO == null || id == 0)
       {
