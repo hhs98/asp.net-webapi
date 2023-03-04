@@ -1,104 +1,120 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Authorization;
 
-namespace ProductApi.Controllers;
-
-[Authorize(Roles = "SuperAdmin,Admin,User")]
-[ApiController]
-[Route("api/[controller]")]
-public class ProductsController : ControllerBase
+namespace ProductApi.Controllers
 {
-  private readonly DatabaseContext _context;
-  public ProductsController(DatabaseContext context)
+  [Authorize(Roles = "SuperAdmin,Admin,User")]
+  [ApiController]
+  [Route("api/[controller]")]
+  public class ProductController : ControllerBase
   {
-    _context = context;
-  }
-  
-  // GET: api/Products
-  [HttpGet]
-  public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
-  {
-    return await _context.Products.ToListAsync();
-  }
+    private readonly DatabaseContext _context;
 
-  // GET: api/Products/5
-  [HttpGet("{id}")]
-  public async Task<ActionResult<Product>> GetProduct(int id)
-  {
-    var product = await _context.Products.FindAsync(id);
-
-    if (product == null)
+    public ProductController(DatabaseContext context)
     {
-      return NotFound();
+      _context = context;
     }
 
-    return product;
-  }
-
-  // PUT: api/Products/5
-  // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-  [HttpPut("{id}")]
-  [Authorize(Policy = "AdminOnly")]
-  public async Task<IActionResult> PutProduct(int id, Product product)
-  {
-    if (id != product.Id)
+    [HttpGet]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
     {
-      return BadRequest();
+      var products = await _context.Products.ToListAsync();
+      return Ok(products);
     }
 
-    _context.Entry(product).State = EntityState.Modified;
+    [HttpGet("{id:int}", Name = "GetProduct")]
+    public async Task<ActionResult<Product>> GetProduct(int id)
+    {
+      var product = await _context.Products.FindAsync(id);
 
-    try
-    {
-      await _context.SaveChangesAsync();
-    }
-    catch (DbUpdateConcurrencyException)
-    {
-      if (!ProductExists(id))
+      if (product == null)
       {
         return NotFound();
       }
-      else
-      {
-        throw;
-      }
+
+      return Ok(product);
     }
 
-    return NoContent();
-  }
-
-  // POST: api/Products
-  // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-  [HttpPost]
-  [Authorize(Policy = "AdminOnly")]
-  public async Task<ActionResult<Product>> PostProduct(Product product)
-  {
-    _context.Products.Add(product);
-    await _context.SaveChangesAsync();
-
-    return CreatedAtAction("GetProduct", new { id = product.Id }, product);
-  }
-
-  // DELETE: api/Products/5
-  [HttpDelete("{id}")]
-  [Authorize(Policy = "SuperAdminOnly")]
-  public async Task<IActionResult> DeleteProduct(int id)
-  {
-    var product = await _context.Products.FindAsync(id);
-    if (product == null)
+    [HttpPost]
+    public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
     {
-      return NotFound();
+      if (product == null)
+      {
+        return BadRequest();
+      }
+
+      await _context.Products.AddAsync(product);
+      await _context.SaveChangesAsync();
+
+      return CreatedAtRoute("GetProduct", new { id = product.Id }, product);
     }
 
-    _context.Products.Remove(product);
-    await _context.SaveChangesAsync();
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
+    {
+      if (product == null || id != product.Id)
+      {
+        return BadRequest();
+      }
 
-    return NoContent();
-  }
+      var existingProduct = await _context.Products.FindAsync(id);
+      if (existingProduct == null)
+      {
+        return NotFound();
+      }
 
-  private bool ProductExists(int id)
-  {
-    return _context.Products.Any(e => e.Id == id);
+      existingProduct.Name = product.Name;
+      existingProduct.Description = product.Description;
+      existingProduct.Price = product.Price;
+      existingProduct.InStock = product.InStock;
+
+      await _context.SaveChangesAsync();
+
+      return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = "SuperAdminOnly")]
+    public async Task<IActionResult> DeleteProduct(int id)
+    {
+      var product = await _context.Products.FindAsync(id);
+      if (product == null)
+      {
+        return NotFound();
+      }
+
+      _context.Products.Remove(product);
+      await _context.SaveChangesAsync();
+
+      return NoContent();
+    }
+
+    [HttpPatch("{id:int}", Name = "UpdatePartialProduct")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdatePartialProduct(int id, JsonPatchDocument<Product> patchDTO)
+    {
+      if (patchDTO == null || id == 0)
+      {
+        return BadRequest();
+      }
+      var product = await _context.Products.FindAsync(id);
+      if (product == null)
+      {
+        return BadRequest();
+      }
+      patchDTO.ApplyTo(product, ModelState);
+      if (!ModelState.IsValid)
+      {
+        return BadRequest(ModelState);
+      }
+      await _context.SaveChangesAsync();
+      return NoContent();
+    }
   }
 }

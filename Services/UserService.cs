@@ -1,6 +1,3 @@
-
-using ProductApi.Controllers;
-
 namespace ProductApi.Services;
 
 public class UserService
