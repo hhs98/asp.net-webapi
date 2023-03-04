@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using ProductApi.Services;
+using ProductApi.Models;
+using ProductApi.Models.Dto;
 
 namespace ProductApi.Controllers;
 

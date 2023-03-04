@@ -1,10 +1,12 @@
+using ProductApi.Models;
+using ProductApi.Models.Dto;
 namespace ProductApi.Services;
 
 public class UserService
 {
-  private readonly DatabaseContext _dbContext;
+  private readonly ApplicationDbContext _dbContext;
 
-  public UserService(DatabaseContext dbContext)
+  public UserService(ApplicationDbContext dbContext)
   {
     _dbContext = dbContext;
   }

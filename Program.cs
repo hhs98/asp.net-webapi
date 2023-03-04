@@ -7,7 +7,7 @@ using ProductApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<DatabaseContext>(options =>
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
@@ -72,7 +72,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-  var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+  var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
   db.Database.Migrate();
 }
 
